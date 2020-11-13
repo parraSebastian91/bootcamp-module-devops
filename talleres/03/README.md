@@ -21,7 +21,8 @@ Agregar las reglas para ambos security groups:
 
 - *Instancias:* Aceptar tráfico entrante en el puerto **8000** desde el security group del Load Balancer. Aceptar tráfico entrante en el puerto **22** desde cualquier fuente.
 
-Consulta la documentación de CloudFormation sobre [Security Groups](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html). **Tip**: Revisa la propiedad [SecurityGroupIngress](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-securitygroupingress) para completar este paso.
+Consulta la documentación de CloudFormation sobre [Security Groups](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html).
+**Tip**: Revisa la propiedad [SecurityGroupIngress](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html#cfn-ec2-securitygroup-securitygroupingress) para completar este paso.
 
 3. **Load Balancer**
 

@@ -1,7 +1,7 @@
-AWSTemplateFormatVersion: 2010-09-09
-Description: API de Mythical Mysfits con Auto Scaling Groups.
+AWSTemplateFormatVersion: 2010-09-09 #No cambia, opcional es la version del formato
+Description: API de Mythical Mysfits con Auto Scaling Groups. # opcional
 
-Mappings:
+Mappings: # definicion de valores que queramos ocupar dentro del template
   RegionMap:
     us-east-1:
       "AmiId": "ami-09d95fab7fff3776c"
@@ -10,19 +10,31 @@ Mappings:
     us-west-2:
       "AmiId": "ami-0e34e7b9ca0ace12d"
 
-Resources:
+Resources: 
   LoadBalancerSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: MythicalMysfitsLB
       GroupDescription: Load Balancer
-      # Ingress rules
-  InstanceSG:
+      SecurityGroupIngress:
+      - IpProtocol: tcp # el - indica que es un objeto de una lista
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+    InstanceSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: MythicalMysfitsInstance
       GroupDescription: Instances
-      # Ingress rules
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 8000
+        ToPort: 8000
+        SourceSecurityGroupId: !GetAtt LoadBalancerSG.GroupId
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0
   LoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:
@@ -30,8 +42,17 @@ Resources:
       SecurityGroups:
         - !GetAtt LoadBalancerSG.GroupId
       AvailabilityZones: !GetAZs
-      # Listeners
-      # HealthCheck
+      Listeners:
+      - InstancePort: '8000'
+        InstanceProtocol: HTTP
+        LoadBalancerPort: '80'
+        Protocol: HTTP
+      HealthCheck:
+        Target: HTTP:8000/
+        HealthyThreshold: '2'
+        UnhealthyThreshold: '3'
+        Interval: '10'
+        Timeout: '5'
   LaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
@@ -43,5 +64,26 @@ Resources:
       KeyName: mythical-mysfits
       SecurityGroups:
         - !GetAtt InstanceSG.GroupId
-      # UserData
-  # AutoScalingGroup:
+      UserData: !Base64 |
+        #!/bin/bash -xe
+        yum install -y python37 git
+        curl -O https://bootstrap.pypa.io/get-pip.py
+        python3 get-pip.py
+        git clone https://github.com/eloyvega/bootcamp-module-devops.git
+        cd bootcamp-module-devops/backend/
+        pip install -r requirements.txt
+        nohup gunicorn -w 3 -b 0.0.0.0:8000 app:app &
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AvailabilityZones: !GetAZs
+      LaunchConfigurationName: !Ref LaunchConfiguration
+      DesiredCapacity: 1
+      MaxSize: 1
+      MinSize: 1
+      LoadBalancerNames:
+        - !Ref LoadBalancer
+      Tags:
+        - Key: Name
+          Value: MythicalMysfitsAPI
+          PropagateAtLaunch: True
